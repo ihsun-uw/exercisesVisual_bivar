@@ -1,0 +1,143 @@
+## Course: Visual Analytics for Policy and Management
+###Bivariate Exercise 2
+####Isabella Sun
+
+
+
+####Figures:
+
+1. [Exercise 1: Lolipop Plot](#ex1)
+
+2. [Exercise 2: Heat plot in ascending order](#ex2)
+
+3. [Exercise 3: Categorical-Numerical](#ex3)
+
+4. [Exercise 4: Numerical Numerical](#ex4)
+
+##
+##
+
+We can start by bringing in the data we will use and libraries
+```{r}
+link="https://github.com/EvansDataScience/data/raw/master/crime.RData"
+load(file = url(link))
+
+library(magrittr)
+library(ggplot2)
+```
+####Exercise 1 Lolipop Plot
+create dataframe of what we will plot
+```{r}
+
+CrimeCol=table(crime$crimecat,crime$Occurred.DayTime)%>%
+         prop.table(margin = 2)%>%   # 2 is % by column
+         "*"(100)%>%
+         round(3)
+
+df.C=as.data.frame(CrimeCol)
+colnames(df.C)=c('Crime','Daytime','Percent')
+```
+misc elements:
+
+```{r}
+title_loli= "What types of crimes are most common during different times of the day?"
+caption = "Source: Seattle Open Data Portal - Seattle Police Department "
+```
+<a id='ex1'></a>
+Create Plot
+```{r}
+base  = ggplot(df.C, aes(x = reorder(Crime, Percent), y = Percent ) ) 
+
+lolliplot1= base + geom_segment(aes(y = 0, 
+                                   x = reorder(Crime, Percent), 
+                                   yend = Percent, 
+                                   xend = Crime), color = "grey50") 
+lolliplot2 = lolliplot1 + geom_point()
+ 
+lolliplot3 = lolliplot2 + facet_wrap( ~ Daytime ,nrow = 1) 
+lolliplot4 = lolliplot3 + coord_flip() + theme(axis.text.y = element_text(size=4,angle = 45))
+
+lolliplot5 = lolliplot4 + labs(title=title_loli,
+                     x ="Crime", 
+                     y ="Percent of Incidences",
+                     caption = caption)
+
+
+lolliplot5
+
+```
+
+####Exercise 1 Heat Plot
+Heat plot in ascending order where intensity goes from yellow to purple
+```{r}
+title_heat = "What types of crimes are most common
+during different times of the day?"
+```
+<a id='ex2'></a>
+Create Plot
+```{r}
+base  = ggplot(df.C, aes(x = Daytime, y = reorder(Crime, -Percent), fill = Percent)) 
+heat1 = base +  geom_tile() 
+heat2 = heat1 +scale_fill_gradient(low = "yellow", 
+                                   high = "purple")
+
+heat3 = heat2 + theme_classic() 
+
+heat4 = heat3 + theme(axis.text.x = element_text(angle = 90, vjust = 0.6), 
+                      legend.title = element_blank(), #no title for legend
+                      legend.position="top", 
+                      legend.direction="horizontal",
+                      legend.key.width=unit(1, "cm"),
+                      legend.key.height=unit(1, "cm")) 
+
+heat5 = heat4 + labs(title=title_heat,
+                     caption = caption)
+
+heat5 + labs(y="Crime")
+```
+
+
+####Exercise 3: Categorical-Numerical
+
+Create data frame of what we will plot
+```{r}
+
+crimeWeek=crime[(crime$DaysToReport<365) & (crime$year>=2000),]
+
+crimeWeek$WeeksToReport=crimeWeek$DaysToReport/7
+
+crimeYearGG2=crimeWeek[complete.cases(crimeWeek$WeeksToReport) &complete.cases(crimeWeek$crimecat),]
+
+```
+
+misc figure elements
+```{r}
+title_1 = "How long does it take for someone to report
+different types of crimes?"
+```
+<a id='ex3'></a>
+Create figure
+```{r}
+base = ggplot(crimeYearGG2,
+              aes(x = reorder(crimecat, WeeksToReport, FUN = max),
+                  y=WeeksToReport)) 
+mins = base + stat_summary(fun.y=min,size=1,
+                           geom="line", linetype='dashed',show.legend = T,
+                           aes(group=1,col='Min'))
+minsMaxs= mins + stat_summary(fun.y=max,
+                              geom="line",size=1,show.legend = F,
+                              aes(group=1,col='Max'))
+minsMaxsMd= minsMaxs + stat_summary(fun.y=median,size=2,
+                                    geom="line",
+                                    aes(group=2,col='Median'))
+all3=minsMaxsMd + scale_colour_manual(name="Trends",
+                                      values=c("blue", "black","red"))
+
+all4 = all3 + labs(title = title_1,
+                    x ="Type of Crime", 
+                    y = "Weeks to report",
+                    caption = caption)
+
+all4+coord_flip()
+```
+
