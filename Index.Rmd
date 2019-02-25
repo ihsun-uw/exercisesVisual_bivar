@@ -24,6 +24,9 @@ load(file = url(link))
 
 library(magrittr)
 library(ggplot2)
+library(tibble)
+library(ggrepel)
+library(hexbin)
 ```
 ####Exercise 1 Lolipop Plot
 create dataframe of what we will plot
@@ -185,9 +188,57 @@ all4+coord_flip()
 ```
 
 ####Exercise 4
-
+Calculating data to plot 
 
 ```{r}
+#average days it takes to report a crime by neighborhood
 daysByNeigh=tapply(crime$DaysToReport, crime$Neighborhood, mean,na.rm=T)
+
+#types of crime by neighborhood
+crimesByNeigh=tapply(crime$crimecat, crime$Neighborhood, length)%>%      
+                     prop.table()%>%
+                     "*"(100)%>% 
+                     round(2) 
+```
+
+Saving information as data frame and merging into one data frame 
+
+```{r}
+daysByNeigh=as.data.frame(daysByNeigh)%>%rownames_to_column()
+crimesByNeigh=as.data.frame(crimesByNeigh)%>%rownames_to_column()
+
+num_num=merge(daysByNeigh,crimesByNeigh)
+```
+Misc elements
+```{r}
+scat_title = "Downtown Commercial, Northgate, Capitol Hill, and Northgate:
+These Neighboorhoods each have more than 5% of total crime, 
+but take relatively few days to report crimes"
+```
+<a id='ex4'></a>
+Create Plot
+```{r}
+base = ggplot(num_num, aes(daysByNeigh,crimesByNeigh)) 
+
+scatp1 = base +  stat_density_2d(aes(fill = ..density..), 
+                                 geom = "raster", contour = FALSE)
+
+scatp2=scatp1+geom_text_repel(aes(label=ifelse(crimesByNeigh>=5,
+                                               num_num$rowname, "")))
+
+scatp3 = scatp2 +  theme(legend.position='none') 
+
+
+scatp4 = scatp3 + scale_fill_distiller(palette="Greys", direction=1) 
+
+scatp5 = scatp4 + labs(title = scat_title,
+                    x ="Average Days to Report", 
+                    y = "Share of Total Crime (%)",
+                    caption = caption)
+
+scatp6 = scatp5 +  scale_x_continuous(expand = c(0, 0)) + 
+         scale_y_continuous(expand = c(0, 0)) 
+scatp6
+
 ```
 
