@@ -185,3 +185,9 @@ all4+coord_flip()
 ```
 
 ####Exercise 4
+
+
+```{r}
+daysByNeigh=tapply(crime$DaysToReport, crime$Neighborhood, mean,na.rm=T)
+```
+
